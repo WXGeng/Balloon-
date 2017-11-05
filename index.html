@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title></title>
+		<style type="text/css">
+			*{
+				margin: 0px;
+				padding: 0px;
+			}
+			body{
+				background-color: chartreuse;
+				overflow: hidden;/*超出隐藏*/
+			}
+			.balloon{
+				width: 160px;
+				height: 160px;
+				background: cyan;
+				position: absolute;
+				top:0px;
+				left:0px;
+				border-radius: 160px 160px 60px 160px;/*画圆角气球 顺时针四个角*/
+				transform:rotate(45deg);/*顺时针旋转45度*/
+				box-shadow: -8px -8px 80px -8px red inset;/*横向影子位移  纵向影子位移  羽化  阴影  颜色  inset向内阴影*/
+			}
+			.balloon::after{/*after尾元素  画那个吹起口*/
+				position: absolute;
+				bottom: 0px;
+				right: 0px;
+				content: '';/*冒号为了hover区分*/
+				display: block;
+				width: 0px;
+				height: 0px;
+				border: 8px solid transparent;/*去掉正方形的一半剩下三角  透明*/
+				border-right-color:rgba(230,30,40,1);
+				transform: rotate(45deg);
+				border-radius: 16px;
+			}
+		</style>
+	</head>
+	<body>
+		<!--<div class="balloon"></div>-->
+		<script type="text/javascript">
+			/*
+			 javaScript 基于原型的动态解释性脚本语言  很多说法
+			 	1.响应用户的操作  点击  移入 键盘事件
+			 	2.操作dom元素 增删改查  操作属性
+			 	3.数据交互 和表单验证
+			 	  ajax 正则表达式  独立的技术
+			      json  
+			 	      跨域
+			 	4.深入底层  什么是原型  什么是属性  什么是类  什么是插件开发
+			 	      造轮子 vue mvvm mvc node.js  node.js是c++和js混编的语言
+			 */
+			/*
+			 	写代码的时候 不要一开始就写代码
+			 	先做一个需求分析 用到什么  怎么做简单
+			 	1.利用js动态生成div初始化节点
+			 		1.js动态生成div
+			 			1.生成几个
+			 			2.怎么生成 for循环
+			 			3.dom节点操作
+			 				1.创建
+			 				2.修整
+			 				3.添加
+			 			4.初始化气球生成位置
+			 				1.随机位置 randomX 0-1包零不包一
+			 				2.max 判断浏览器窗口
+			 	2.让气球动起来,给随机的运动速度
+			 		1.获取所有生成的气球
+			 			getElementsByClassName
+			 			getElementById
+			 			getElementsByTagName
+			 			H5 选择器api 兼容到IE8
+			 			querySelector  单个节点
+			 			querySelectorAll  节点集合
+			 		2.改变元素的top值
+			 		3.利用定时器持续执行move函数
+			 			setInterval；
+			 		4.对象自定义属性
+			 			自定义属性随机速度
+			 	3.点击气球,气球动画之后消失
+			 		1.事件绑定
+			 			ele.event=function(){}
+			 		2.节点自己删除
+			 			获取子节点     找到它父级       让父级把自己干掉   干掉这个子节点
+			 			this.parentNode.removeChild(this);
+			 	4.爆炸动画
+			 		1.越来越快  大小减少
+			 		2.左右摇摆
+			 		3.最后消失
+			 		回掉函数
+			 * */
+			var num=10;//初始化气球数量
+			var bW=160;//气球宽度
+			var wW=window.innerWidth;//获取窗口的宽度
+			var wH=window.innerHeight;//获取窗口的高度
+			var timer=null;
+			init(num);//初始化函数
+			timer=setInterval(move,1000/60);//1000/60浏览器显示刷新的频率极限
+			function init(num){
+				for (var i=0;i<num;i++) {//不要让for循环裸漏在script标签里 那样的话这个i属性会编程全局变量
+					var randomX=Math.random()*wW-bW;//乘以浏览器宽度   减去气球宽度
+					randomX=Math.max(0,randomX);
+					var oBalloon=document.createElement('div');//创建div标签
+					oBalloon.className='balloon';//给它一个类命
+					oBalloon.style.left=randomX+'px';
+					oBalloon.style.top=wH+'px';//从更底部生成  wH-bW 从底部生成
+					oBalloon.speed=Math.random()*5+1;//自定义属性随机速度
+					document.body.appendChild(oBalloon);//添加到body标签里面
+					//通过监听body标签  监听它单击事件   监听单击事件出发了什么   是否捕获
+					document.body.addEventListener('click',function(e){//事件代理
+						if (e.target.className.toLowerCase()==='balloon') {
+							boom.call(e.target,function(){
+								//console.log('大家好 我是高级回调函数');
+								this.parentNode.removeChild(this);//回调函数
+								init(1); //num 等于永远等于1  无限生成  相当于飞机大战 
+							}.bind(e.target));//方法二    转移目标函数内部的this的指向为参数  他也可以接收函数里面传的参数
+							//e.target.parentNode.removeChild(e.target);//点击body标签里面的div就remove掉
+						}
+					},false);
+				}
+			}
+			function move(){
+				var oBalloons=document.querySelectorAll('.balloon');
+				for (var i=0,len=oBalloons.length;i<len;i++) {
+					oBalloons[i].style.top=oBalloons[i].offsetTop-oBalloons[i].speed+'px';
+					/*oBalloons[i].onclick=function(){
+						//让父级删除自身
+						this.parentNode.removeChild(this);
+					}
+					*/
+				}
+			}
+			function boom(cd){//爆炸动画
+				//尽量避免全局变量     var This=this;
+				this.timer=setInterval(function(){//setInterval如果不给他设置指向值  它将永远指向window  因为他是dom内置的方法
+					if(this.offsetWidth<10){
+						clearInterval(this.timer);//停止定时器
+						cd&&cd();//回调函数
+						//方法一  cb&&cb.call(this);借用 软绑定
+						//cb&&cb()||cbA()  判断函数是否存在 存在执行 cb() 不存在执行cbA();
+						
+					}
+					
+					this.speed++;//速度自增
+					this.style.width=this.offsetWidth-10+'px';
+					this.style.height=this.offsetHeight-10+'px';
+				}.bind(this),1000/60);//this就是被点击的气球  定时器有丢帧BUG 
+			}
+		</script>
+	</body>
+</html>
+<!--oBalloon={ //节点对象
+	className:'balloon', //属性
+		style:{	//节点对象有这个对象
+			width:'1000'//可以操作这个属性
+			height:'100';
+		}
+}
+节点不能调用定时器  只有window可以
+不管是前端 还是后台 到最后就只剩下
+数据 通信 算法 业务
+vue angular react node用原生js+c++编译出来的
+-->
